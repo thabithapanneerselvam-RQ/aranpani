@@ -8,8 +8,8 @@ export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: "date" })
-  date_of_pay: Date;
+  @Column({ type: "date", name: "date_of_pay" })
+  dateOfPay: Date;
 
   @Column({ type: "enum", enum: PaymentMode })
   mode: PaymentMode;
@@ -23,14 +23,14 @@ export class Payment {
   @Column()
   amount: number;
 
-  @Column()
-  transaction_id: string;
+  @Column({name: "transaction_id"})
+  transactionId: string;
 
-  @Column()
-  paid_by: string;
+  @Column({name: "paid_by"})
+  paidBy: string;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({name: "created_at"})
+  createdAt: Date;
 
   @ManyToOne(() => Donor, d => d.payments)
   @JoinColumn({ name: "donor_id" })

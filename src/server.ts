@@ -1,15 +1,18 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 import { AppDataSource } from "./Config/dataSource";
-import express, { Request, Response }from  "express";
+import express from  "express";
 import bodyParser from "body-parser";
+import paymentRoutes from "./Routes/paymentRoutes"
  
 const app = express()
 
 app.use(express.json())
 app.use(bodyParser.json())
 
+app.set("query parser", "extended");
 
+app.use("/api/dashboard/payments", paymentRoutes)
 
 async function startServer(){
 

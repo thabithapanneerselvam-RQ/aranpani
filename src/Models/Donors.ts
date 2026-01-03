@@ -9,11 +9,11 @@ export class Donor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  donor_name: string;
+  @Column({ name: "donor_name" })
+  donorName: string;
 
-  @Column()
-  phone_no: string;
+  @Column({ name: "phone_no" })
+  phoneNo: string;
 
   @Column()
   address: string;
@@ -33,15 +33,15 @@ export class Donor {
   @Column({ type: "enum", enum: DonorStatus })
   status: DonorStatus;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: "created_at" })
+  createdAt: Date;
 
   @ManyToOne(() => AreaRep, ar => ar.donors)
   @JoinColumn({ name: "area_rep_id" })
-  area_rep: AreaRep;
+  areaRep: AreaRep;
 
   @OneToMany(() => GroupMember, gm => gm.donor)
-  group_members: GroupMember[];
+  groupMembers: GroupMember[];
 
   @OneToMany(() => Payment, p => p.donor)
   payments: Payment[];

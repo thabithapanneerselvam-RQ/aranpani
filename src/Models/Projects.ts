@@ -8,27 +8,27 @@ export class Project {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  temple_name: string;
+  @Column({name: "temple_name"})
+  templeName: string;
 
-  @Column()
-  temple_incharge_name: string;
+  @Column({name: "temple_incharge_name"})
+  templeInchargeName: string;
 
-  @Column()
-  contact_no: string;
+  @Column({name:"contact_no"})
+  contactNo: string;
 
-  @Column()
-  temple_location: string;
+  @Column({name: "temple_location"})
+  templeLocation: string;
 
   @Column({ type: "enum", enum: ProjectStatus })
   status: ProjectStatus;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({name: "created_at"})
+  createdAt: Date;
 
   @OneToMany(() => Payment, payment => payment.project)
   payments: Payment[];
 
   @OneToMany(() => OneTimePayment, otp => otp.project)
-  one_time_payments: OneTimePayment[];
+  oneTimePayments: OneTimePayment[];
 }
