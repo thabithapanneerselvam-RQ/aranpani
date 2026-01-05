@@ -1,10 +1,7 @@
 import { Request,Response } from "express"
-import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails, sendOnetimepayment, createOnetimepayment} from "../Services/paymentServices"
+import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails, sendOnetimepayment, createOnetimepayment, fetchDonorByPhone} from "../Services/paymentServices"
 import { checkPhoneSchema, detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, subdetailSchema } from "../Validations/paymentValidations";
-import { Donor } from "../Models/Donors";
-import { AppDataSource } from "../Config/dataSource";
 
-const donorRepo = AppDataSource.getRepository(Donor)
 
 export const getMetrics = async(req:Request, res:Response)=>{
     try{
@@ -26,7 +23,6 @@ export const getDetails = async(req:Request, res:Response)=>{
     try{
         await detailSchema.validate(req.query);
         const {search,sort,filter,page,pageSize} = req.query;
-        console.log(search,sort,filter,page,pageSize)
         const fetchedDetails = await getAllDetails(search,sort,filter,Number(page),Number(pageSize));
         return res.status(200).json(fetchedDetails)
 
@@ -119,30 +115,9 @@ export const getDonorByPhone = async(req:Request, res:Response)=>{
     await checkPhoneSchema.validate(req.params);
     const {phone_no} = req.params;
 
-    const donor = await donorRepo.findOne({
-      where: {phoneNo: phone_no},
-      relations: ["areaRep"],
-    });
+    const fetchedDonor = await fetchDonorByPhone(phone_no)
+    return res.status(200).json(fetchedDonor);
 
-    if(!donor){
-      return res.status(404).json({
-        exists: false,
-        message: "Donor not found",
-      });
-    }
-
-    return res.json({
-      exists: true,
-      donor: {
-        id: donor.id,
-        donor_name: donor.donorName,
-        email: donor.email,
-        address: donor.address,
-        district: donor.district,
-        pincode: donor.pincode,
-        area_rep_id: donor.areaRep?.id || null,
-      },
-    });
   }catch(err){
     console.error(err);
     return res.status(500).json({message: "Server error"});

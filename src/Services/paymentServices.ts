@@ -346,3 +346,31 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
     message: "Payment recorded successfully",
   };
 };
+
+
+export const fetchDonorByPhone = async(phone_no: string)=>{
+  const donor = await donorRepo.findOne({
+      where: {phoneNo: phone_no},
+      relations: ["areaRep"],
+    });
+
+    if(!donor){
+      return{
+        exists: false,
+        message: "Donor not found",
+      };
+    }
+
+    return{
+      exists: true,
+      donor: {
+        id: donor.id,
+        donor_name: donor.donorName,
+        email: donor.email,
+        address: donor.address,
+        district: donor.district,
+        pincode: donor.pincode,
+        area_rep_id: donor.areaRep?.id || null,
+      },
+    };
+}
