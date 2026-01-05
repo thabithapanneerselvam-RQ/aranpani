@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Jo
 import { AreaRep } from "./Area_reps";
 import { Project } from "./Projects";
 import { PaymentMode } from "../Enums/paymentEnum";
+import { Donor } from "./Donors";
 
 @Entity("one_time_payment")
 export class OneTimePayment {
@@ -26,6 +27,10 @@ export class OneTimePayment {
   @ManyToOne(() => AreaRep, ar => ar.oneTimePayments)
   @JoinColumn({ name: "area_rep_id" })
   areaRep: AreaRep;
+
+  @ManyToOne(() => Donor, d => d.payments)
+  @JoinColumn({ name: "donor_id" })
+  donor: Donor; 
 
   @ManyToOne(() => Project, p => p.oneTimePayments)
   @JoinColumn({ name: "project_id" })

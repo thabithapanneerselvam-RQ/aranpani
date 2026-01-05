@@ -17,12 +17,9 @@ export class Donor {
 
   @Column()
   address: string;
-
-  @Column()
-  country: string;
-
-  @Column()
-  state: string;
+  
+  @Column({nullable: true})
+  email: string;
 
   @Column()
   district: string;

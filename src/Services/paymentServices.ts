@@ -1,9 +1,17 @@
 import { AppDataSource } from "../Config/dataSource"
 import { OneTimePayment } from "../Models/Onetimepayments"
 import { Payment } from "../Models/Payments"
+import { Donor } from "../Models/Donors"
+import { DonorStatus, PaymentMode } from "../Enums/paymentEnum"
+import { Otp } from "../Models/Otp"
 
 const paymentRepo = AppDataSource.getRepository(Payment)
 const oneTimePaymentRepo = AppDataSource.getRepository(OneTimePayment)
+const donorRepo = AppDataSource.getRepository(Donor);
+const otpRepo = AppDataSource.getRepository(Otp)
+
+const {TWILIO_ACCOUNT_SID, TWILIO_SERVICE_SID, TWILIO_AUTH_TOKEN} = process.env;
+
 
 export const getAllMetrics = async(fromDate?: string, toDate?: string)=>{
     const qb = paymentRepo.createQueryBuilder("p")
@@ -170,7 +178,8 @@ export const getAllOnetimepayments = async (
   const qb = oneTimePaymentRepo
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.areaRep", "rep")
-    .leftJoinAndSelect("p.project", "proj");
+    .leftJoinAndSelect("p.project", "proj")
+    .leftJoinAndSelect("p.donor", "donor");
 
   if (filter?.fromDate && filter?.toDate) {
     qb.andWhere("p.dateOfPay BETWEEN :from AND :to", {
@@ -199,9 +208,9 @@ export const getAllOnetimepayments = async (
   return {
     data: rows.map((row, index) => ({
       s_no: (page - 1) * pageSize + index + 1,
-      name: row.areaRep?.repName,
-      phone: row.areaRep?.phoneNo,
-      address: row.areaRep?.address,
+      name: row.areaRep?.repName || row.donor?.donorName,
+      phone: row.areaRep?.phoneNo || row.donor?.phoneNo,
+      address: row.areaRep?.address || row.donor?.address,
       amount: row.amount,
     })),
     meta: {
@@ -237,3 +246,123 @@ export const getOnetimepaymentSubdetails = async(paymentId: number)=>{
     }
   };
 }
+
+
+
+
+export const sendOnetimepayment = async(phone_no: string)=>{
+  if (!phone_no) {
+    throw new Error("Required field phoneno is missing");
+  }
+
+  const client = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,{
+    lazyLoading: true
+  })
+
+  const otpResponse = await client.verify.v2
+    .services(TWILIO_SERVICE_SID)
+    .verifications.create({
+      to: phone_no,
+      channel: "sms"
+    });
+
+    await otpRepo.save(
+    otpRepo.create({
+      phoneNo: phone_no,
+      code: otpResponse.sid,
+      expiry: new Date(Date.now() + 5 * 60 * 1000),
+      verified: false,
+    })
+  );
+  
+  return {
+    success: true,
+    message: "otp sent successfully",
+    sid: otpResponse.sid
+  };
+};
+
+
+export const createOnetimepayment = async (
+  phone_no: string,
+  email: string,
+  donor_name: string,
+  amount: number,
+  payment_mode: string,
+  transaction_id: string,
+  district: string,
+  address: string,
+  pincode: string,
+  otp: string
+) => {
+  if (!phone_no || !otp || !amount || !payment_mode || !email) {
+    throw new Error("Required fields missing");
+  }
+
+  const client = require('twilio')(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,{
+    lazyLoading: true
+  })
+
+  const verification = await client.verify.v2
+    .services(TWILIO_SERVICE_SID)
+    .verificationChecks.create({
+      to: phone_no,
+      code: otp,
+    });
+
+  if (verification.status !== "approved") {
+    throw new Error("Invalid OTP");
+  }
+
+
+  const otpRecord = await otpRepo.findOne({
+    where: { phoneNo: phone_no, verified: false },
+    order: { createdAt: "DESC" },
+  });
+
+  if (!otpRecord) throw new Error("OTP not found");
+
+  if (otpRecord.expiry < new Date()) {
+    throw new Error("OTP expired");
+  }
+
+  otpRecord.verified = true;
+  console.log(otpRecord.oneTimePayment?.id)
+  await otpRepo.save(otpRecord);
+
+
+  let donor = await donorRepo.findOne({ where: { phoneNo: phone_no } });
+
+  let donorCreated = false;
+
+  if (!donor) {
+    donor = donorRepo.create({
+      donorName: donor_name,
+      email,
+      district,
+      address,
+      pincode,
+      phoneNo: phone_no,
+      status: DonorStatus.ACTIVE
+    });
+    await donorRepo.save(donor);
+    donorCreated = true;
+  }
+
+  const payment = oneTimePaymentRepo.create({
+    donor,
+    amount,
+    mode: payment_mode as PaymentMode,
+    transactionId: transaction_id,
+    dateOfPay: new Date(),
+  });
+
+  await oneTimePaymentRepo.save(payment);
+
+  return {
+    success: true,
+    donor_created: donorCreated,
+    payment_id: payment.id,
+    message: "Payment recorded successfully",
+  };
+};

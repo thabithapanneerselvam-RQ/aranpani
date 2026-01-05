@@ -1,5 +1,5 @@
 import { Request,Response } from "express"
-import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails} from "../Services/paymentServices"
+import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails, sendOnetimepayment, createOnetimepayment} from "../Services/paymentServices"
 import { detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, subdetailSchema } from "../Validations/paymentValidations";
 
 export const getMetrics = async(req:Request, res:Response)=>{
@@ -82,3 +82,30 @@ export const getOtpSubdetails = async(req:Request, res:Response)=>{
     } 
 }
 
+
+export const sendOtp = async(req:Request, res:Response)=>{ 
+    try{ 
+        const {phone_no} = req.body; 
+        const createdOnetimepayment = await sendOnetimepayment(phone_no); 
+        return res.status(200).json(createdOnetimepayment) 
+    }catch(err){ 
+        console.error("error in getotpsubdetails",err); 
+        return res.status(500).json({ message: "error in fetching onetimepayments sub-details data", 
+            error: err instanceof Error ? err.message : err 
+        }); 
+    } 
+}
+
+export const createOtp = async(req:Request, res:Response)=>{ 
+    try{ 
+        const {phone_no, email, donor_name, amount, payment_mode, transaction_id, district, address, pincode, otp} = req.body; 
+        const createdOnetimepayment = await createOnetimepayment(phone_no, email, donor_name, amount, payment_mode, transaction_id, district, address, pincode, otp); 
+        return res.status(200).json(createdOnetimepayment) 
+    }catch(err){ 
+        console.error("error in getotpsubdetails",err); 
+        return res.status(500).json({ 
+            message: "error in fetching onetimepayments sub-details data", 
+            error: err instanceof Error ? err.message : err 
+        }); 
+    } 
+}
