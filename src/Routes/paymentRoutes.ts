@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {getMetrics, getDetails, getSubdetails, getOnetimepayments, getOtpSubdetails, sendOtp, createOtp} from "../Controllers/paymentControllers"
+import {getMetrics, getDetails, getSubdetails, getOnetimepayments, getOtpSubdetails, sendOtp, createOtp, getDonorByPhone} from "../Controllers/paymentControllers"
 
 const router = Router()
 
@@ -14,5 +14,6 @@ router.get("/oneTimePayment/:paymentId/sub-details", getOtpSubdetails)
 router.post("/send-otp", sendOtp);
 router.post("/create-otp", createOtp)
 
+router.get("/donors/by-phone/:phone_no", getDonorByPhone);
 
 export default router;
