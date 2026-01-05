@@ -42,24 +42,24 @@ export const getAllMetrics = async(fromDate?: string, toDate?: string)=>{
     ])
     .getRawOne();
 
-    return {
-    monthly_donations: {
+    return{
+    monthly_donations:{
       amt: Number(result?.monthly_amt) || 0,
       count: Number(result?.monthly_count) || 0,
     },
-    online_donations: {
+    online_donations:{
       amt: Number(result?.online_amt) || 0,
       count: Number(result?.online_count) || 0,
     },
-    offline_donations: {
+    offline_donations:{
       amt: Number(result?.offline_amt) || 0,
       count: Number(result?.offline_count) || 0,
     },
-    pending_amount_from_rep: {
+    pending_amount_from_rep:{
       amt: Number(result?.pending_amt) || 0,
       count: Number(result?.pending_count) || 0,
     },
-    not_paid_amt: {
+    not_paid_amt:{
       amt: Number(result?.not_paid_amt) || 0,
       count: Number(result?.not_paid_count) || 0,
     },
@@ -67,32 +67,26 @@ export const getAllMetrics = async(fromDate?: string, toDate?: string)=>{
 }
 
 
-export const getAllDetails = async (
-  search: any,
-  sort: any,
-  filter: any,
-  page: number,
-  pageSize: number
-) => {
+export const getAllDetails = async(search: any, sort: any, filter: any, page: number, pageSize: number)=>{
   const qb = paymentRepo
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.donor", "d")
 
 
-  if (filter?.fromDate && filter?.toDate) {
+  if(filter?.fromDate && filter?.toDate){
     qb.andWhere("p.date_of_pay BETWEEN :from AND :to", {
       from: filter.fromDate,
       to: filter.toDate,
     });
   }
 
-  if (search?.donorName) {
+  if(search?.donorName){
     qb.andWhere("LOWER(d.donor_name) LIKE LOWER(:donor_name)", {
       donor_name: `%${search.donorName}%`,
     });
   }
 
-  if (sort?.status) {
+  if(sort?.status){
     qb.orderBy("p.mode", sort.status.toUpperCase() === "DESC" ? "DESC" : "ASC");
   } else {
     qb.orderBy("p.createdAt", "DESC");
@@ -102,8 +96,8 @@ export const getAllDetails = async (
 
   const [rows, totalCount] = await qb.getManyAndCount();
 
-  return {
-    data: rows.map((row, index) => ({
+  return{
+    data: rows.map((row, index)=>({
       s_no: (page - 1) * pageSize + index + 1,
       reg_no: row.project?.id,
       name: row.donor?.donorName,
@@ -116,26 +110,26 @@ export const getAllDetails = async (
       amount: row.amount,
       status: row.mode
     })),
-    meta: {
+    meta:{
       page,
       pageSize,
-      nextPage: page * pageSize < totalCount ? page + 1 : null,
+      nextPage: page*pageSize<totalCount?page + 1:null,
       totalCount,
-      totalPages: Math.ceil(totalCount / pageSize),
+      totalPages: Math.ceil(totalCount/pageSize),
     }
   };
 };
 
 
-export const getAllSubdetails = async (paymentId: number) => {
+export const getAllSubdetails = async(paymentId: number)=>{
   const payment = await paymentRepo.findOne({
-    where: { id: paymentId },
-    relations: {
-      donor: { groupMembers: true, areaRep: true },
+    where: {id: paymentId},
+    relations:{
+      donor: {groupMembers: true, areaRep: true},
     },
   });
 
-  if (!payment) {
+  if(!payment){
     throw new Error("Payment not found");
   }
 
@@ -143,23 +137,23 @@ export const getAllSubdetails = async (paymentId: number) => {
   const groupMembers = donor.groupMembers || [];
 
   const totalParticipants = groupMembers.length + 1; 
-  const splitAmount = Math.floor(payment.amount / totalParticipants);
+  const splitAmount = Math.floor(payment.amount/totalParticipants);
 
-  return {
-    payment_info: {
+  return{
+    payment_info:{
       date: payment.dateOfPay,
       mode: payment.mode,
       transaction_id: payment.transactionId,
       rep_name: donor.areaRep?.repName || null,
       rep_reg_no: donor.areaRep?.id || null,
     },
-    donation_split: [
+    donation_split:[
       {
           donor_name: donor.donorName,
           amount: splitAmount,
           is_donor: true
         },
-        ...groupMembers.map(gm => ({
+        ...groupMembers.map(gm=>({
           group_member_name: gm.name,
           amount: splitAmount,
         }))
@@ -168,36 +162,30 @@ export const getAllSubdetails = async (paymentId: number) => {
 };
 
 
-export const getAllOnetimepayments = async (
-  search: any,
-  sort: any,
-  filter: any,
-  page: number,
-  pageSize: number
-) => {
+export const getAllOnetimepayments = async(search: any, sort: any, filter: any, page: number, pageSize: number)=>{
   const qb = oneTimePaymentRepo
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.areaRep", "rep")
     .leftJoinAndSelect("p.project", "proj")
     .leftJoinAndSelect("p.donor", "donor");
 
-  if (filter?.fromDate && filter?.toDate) {
-    qb.andWhere("p.dateOfPay BETWEEN :from AND :to", {
+  if(filter?.fromDate && filter?.toDate){
+    qb.andWhere("p.dateOfPay BETWEEN :from AND :to",{
       from: filter.fromDate,
       to: filter.toDate,
     });
   }
 
-  if (search?.arearepName) {
-    qb.andWhere("LOWER(rep.repName) LIKE LOWER(:repName)", {
+  if(search?.arearepName){
+    qb.andWhere("LOWER(rep.repName) LIKE LOWER(:repName)",{
       repName: `%${search.arearepName}%`,
     });
   }
 
-  if (sort?.status) {
+  if(sort?.status){
     qb.orderBy("p.mode", sort.status.toLowerCase() === "desc" ? "DESC" : "ASC"
     );
-  } else {
+  }else{
     qb.orderBy("p.createdAt", "DESC");
   }
 
@@ -205,15 +193,15 @@ export const getAllOnetimepayments = async (
 
   const [rows, totalCount] = await qb.getManyAndCount();
 
-  return {
-    data: rows.map((row, index) => ({
+  return{
+    data: rows.map((row, index)=>({
       s_no: (page - 1) * pageSize + index + 1,
       name: row.areaRep?.repName || row.donor?.donorName,
       phone: row.areaRep?.phoneNo || row.donor?.phoneNo,
       address: row.areaRep?.address || row.donor?.address,
       amount: row.amount,
     })),
-    meta: {
+    meta:{
       page,
       pageSize,
       nextPage: page * pageSize < totalCount ? page + 1 : null,
@@ -226,18 +214,18 @@ export const getAllOnetimepayments = async (
 
 export const getOnetimepaymentSubdetails = async(paymentId: number)=>{
   const onetimePayment = await oneTimePaymentRepo.findOne({
-    where: { id: paymentId },
+    where: {id: paymentId},
     relations: {areaRep: true}
   });
 
-  if (!onetimePayment) {
+  if(!onetimePayment){
     throw new Error("Onetimepayment is not found");
   }
 
   const areaRep = onetimePayment.areaRep;
 
-  return {
-    payment_info: {
+  return{
+    payment_info:{
       date: onetimePayment.dateOfPay,
       mode: onetimePayment.mode,
       transaction_id: onetimePayment.transactionId,
@@ -249,7 +237,7 @@ export const getOnetimepaymentSubdetails = async(paymentId: number)=>{
 
 
 export const sendOnetimepayment = async(phone_no: string)=>{
-  if (!phone_no) {
+  if(!phone_no){
     throw new Error("Required field phoneno is missing");
   }
 
@@ -273,7 +261,7 @@ export const sendOnetimepayment = async(phone_no: string)=>{
     })
   );
   
-  return {
+  return{
     success: true,
     message: "otp sent successfully",
     sid: otpResponse.sid
@@ -284,7 +272,7 @@ export const sendOnetimepayment = async(phone_no: string)=>{
 export const createOnetimepayment = async(phone_no: string, email: string, donor_name: string, amount: number, payment_mode: string, transaction_id: string,
   district: string, address: string, pincode: string, otp: string)=>{
   
-    if (!phone_no || !otp || !amount || !payment_mode || !email) {
+  if(!phone_no || !otp || !amount || !payment_mode || !email){
     throw new Error("Required fields missing");
   }
 
@@ -299,27 +287,28 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
       code: otp,
     });
 
-  if (verification.status !== "approved") {
+  if(verification.status !== "approved"){
     throw new Error("Invalid OTP");
   }
 
 
   const otpRecord = await otpRepo.findOne({
-    where: { phoneNo: phone_no, verified: false },
-    order: { createdAt: "DESC" },
+    where: {phoneNo: phone_no, verified: false},
+    order: {createdAt: "DESC"},
   });
 
   if (!otpRecord) throw new Error("OTP not found");
 
-  if (otpRecord.expiry < new Date()) {
+  if(otpRecord.expiry < new Date()){
     throw new Error("OTP expired");
   }
 
   otpRecord.verified = true;
-  console.log(otpRecord.oneTimePayment?.id)
   await otpRepo.save(otpRecord);
 
-  let donor = await donorRepo.findOne({ where: { phoneNo: phone_no } });
+  let donor = await donorRepo.findOne({ 
+    where: {phoneNo: phone_no} 
+  });
 
   let donorCreated = false;
 

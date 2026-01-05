@@ -1,6 +1,6 @@
 import { Request,Response } from "express"
 import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails, sendOnetimepayment, createOnetimepayment} from "../Services/paymentServices"
-import { detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, subdetailSchema } from "../Validations/paymentValidations";
+import { checkPhoneSchema, detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, subdetailSchema } from "../Validations/paymentValidations";
 import { Donor } from "../Models/Donors";
 import { AppDataSource } from "../Config/dataSource";
 
@@ -116,6 +116,7 @@ export const createOtp = async(req:Request, res:Response)=>{
 
 export const getDonorByPhone = async(req:Request, res:Response)=>{
   try{
+    await checkPhoneSchema.validate(req.params);
     const {phone_no} = req.params;
 
     const donor = await donorRepo.findOne({

@@ -124,3 +124,27 @@ export const otpDetailSchema = yup.object({
 export const otpSubdetailSchema = yup.object().shape({
   paymentId: yup.number().required("payment id is required")
 })
+
+
+export const checkPhoneSchema = yup.object().shape({
+  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+})
+
+
+export const sendOtpSchema = yup.object().shape({
+  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+})
+
+
+export const createOtpSchema = yup.object({
+  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+  otp: yup.string().length(6),
+  email: yup.string().email(),
+  donor_name: yup.string().min(2),
+  amount: yup.number().positive(),
+  payment_mode: yup.string().oneOf(["paid", "pending", "not_paid", "paid by rep", "pending with rep"]),
+  transaction_id: yup.string().optional(),
+  address: yup.string().optional(),
+  district: yup.string().optional(),
+  pincode: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+});
