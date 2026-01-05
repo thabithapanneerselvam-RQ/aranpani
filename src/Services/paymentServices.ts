@@ -248,8 +248,6 @@ export const getOnetimepaymentSubdetails = async(paymentId: number)=>{
 }
 
 
-
-
 export const sendOnetimepayment = async(phone_no: string)=>{
   if (!phone_no) {
     throw new Error("Required field phoneno is missing");
@@ -283,19 +281,10 @@ export const sendOnetimepayment = async(phone_no: string)=>{
 };
 
 
-export const createOnetimepayment = async (
-  phone_no: string,
-  email: string,
-  donor_name: string,
-  amount: number,
-  payment_mode: string,
-  transaction_id: string,
-  district: string,
-  address: string,
-  pincode: string,
-  otp: string
-) => {
-  if (!phone_no || !otp || !amount || !payment_mode || !email) {
+export const createOnetimepayment = async(phone_no: string, email: string, donor_name: string, amount: number, payment_mode: string, transaction_id: string,
+  district: string, address: string, pincode: string, otp: string)=>{
+  
+    if (!phone_no || !otp || !amount || !payment_mode || !email) {
     throw new Error("Required fields missing");
   }
 
@@ -330,7 +319,6 @@ export const createOnetimepayment = async (
   console.log(otpRecord.oneTimePayment?.id)
   await otpRepo.save(otpRecord);
 
-
   let donor = await donorRepo.findOne({ where: { phoneNo: phone_no } });
 
   let donorCreated = false;
@@ -358,6 +346,9 @@ export const createOnetimepayment = async (
   });
 
   await oneTimePaymentRepo.save(payment);
+
+  otpRecord.oneTimePayment = payment;
+  await otpRepo.save(otpRecord);
 
   return {
     success: true,

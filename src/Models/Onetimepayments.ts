@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn, OneToMany } from "typeorm";
 import { AreaRep } from "./Area_reps";
 import { Project } from "./Projects";
 import { PaymentMode } from "../Enums/paymentEnum";
 import { Donor } from "./Donors";
+import { Otp } from "./Otp";
 
 @Entity("one_time_payment")
 export class OneTimePayment {
@@ -35,4 +36,8 @@ export class OneTimePayment {
   @ManyToOne(() => Project, p => p.oneTimePayments)
   @JoinColumn({ name: "project_id" })
   project: Project;
+
+  @OneToMany(() => Otp, (otp) => otp.oneTimePayment)
+  otps: Otp[];
+
 }
