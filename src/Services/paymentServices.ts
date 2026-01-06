@@ -4,6 +4,8 @@ import { Payment } from "../Models/Payments"
 import { Donor } from "../Models/Donors"
 import { DonorStatus, PaymentMode } from "../Enums/paymentEnum"
 import { Otp } from "../Models/Otp"
+import { io } from "../server"
+
 
 const paymentRepo = AppDataSource.getRepository(Payment)
 const oneTimePaymentRepo = AppDataSource.getRepository(OneTimePayment)
@@ -260,6 +262,8 @@ export const sendOnetimepayment = async(phone_no: string)=>{
       verified: false,
     })
   );
+
+  console.log(io.emit("otp_sent", {phone_no}))
   
   return{
     success: true,
@@ -337,6 +341,12 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
 
   otpRecord.oneTimePayment = payment;
   await otpRepo.save(otpRecord);
+
+  console.log(io.emit("payment_success", {
+    paymentId: payment.id,
+    amount,
+  })
+)
 
   return {
     success: true,
