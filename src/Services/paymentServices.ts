@@ -291,7 +291,6 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
     throw new Error("Invalid OTP");
   }
 
-
   const otpRecord = await otpRepo.findOne({
     where: {phoneNo: phone_no, verified: false},
     order: {createdAt: "DESC"},

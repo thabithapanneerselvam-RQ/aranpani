@@ -1,6 +1,6 @@
 import { Request,Response } from "express"
 import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails, sendOnetimepayment, createOnetimepayment, fetchDonorByPhone} from "../Services/paymentServices"
-import { checkPhoneSchema, detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, subdetailSchema } from "../Validations/paymentValidations";
+import { checkPhoneSchema, createOtpSchema, detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, sendOtpSchema, subdetailSchema } from "../Validations/paymentValidations";
 
 
 export const getMetrics = async(req:Request, res:Response)=>{
@@ -84,7 +84,8 @@ export const getOtpSubdetails = async(req:Request, res:Response)=>{
 
 
 export const sendOtp = async(req:Request, res:Response)=>{ 
-    try{ 
+    try{
+        await sendOtpSchema.validate(req.body); 
         const {phone_no} = req.body; 
         const createdOnetimepayment = await sendOnetimepayment(phone_no); 
         return res.status(200).json(createdOnetimepayment) 
@@ -98,6 +99,7 @@ export const sendOtp = async(req:Request, res:Response)=>{
 
 export const createOtp = async(req:Request, res:Response)=>{ 
     try{ 
+        await createOtpSchema.validate(req.body);
         const {phone_no, email, donor_name, amount, payment_mode, transaction_id, district, address, pincode, otp} = req.body; 
         const createdOnetimepayment = await createOnetimepayment(phone_no, email, donor_name, amount, payment_mode, transaction_id, district, address, pincode, otp); 
         return res.status(200).json(createdOnetimepayment) 

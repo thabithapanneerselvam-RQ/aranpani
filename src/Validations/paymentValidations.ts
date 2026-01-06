@@ -127,12 +127,12 @@ export const otpSubdetailSchema = yup.object().shape({
 
 
 export const checkPhoneSchema = yup.object().shape({
-  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format")
 })
 
 
 export const sendOtpSchema = yup.object().shape({
-  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+  phone_no: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format")
 })
 
 
@@ -146,5 +146,5 @@ export const createOtpSchema = yup.object({
   transaction_id: yup.string().optional(),
   address: yup.string().optional(),
   district: yup.string().optional(),
-  pincode: yup.string().matches(/^\+\d{10,15}$/, "Invalid phone format"),
+  pincode: yup.string().matches(/^\d{6}$/, "Invalid pincode")
 });
