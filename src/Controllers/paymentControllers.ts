@@ -1,18 +1,18 @@
 import { Request,Response } from "express"
 import {getAllMetrics, getAllDetails, getAllSubdetails, getAllOnetimepayments, getOnetimepaymentSubdetails, sendOnetimepayment, createOnetimepayment, fetchDonorByPhone} from "../Services/paymentServices"
 import { checkPhoneSchema, createOtpSchema, detailSchema, metricSchema, otpDetailSchema, otpSubdetailSchema, sendOtpSchema, subdetailSchema } from "../Validations/paymentValidations";
-
+import { HttpStatus } from "../Enums/httpStatus";
 
 export const getMetrics = async(req:Request, res:Response)=>{
     try{
         await metricSchema.validate(req.query);
         const {fromDate, toDate} = req.query;
         const fetchedMetrics = await getAllMetrics(fromDate as string, toDate as string);
-        return res.status(200).json(fetchedMetrics)
+        return res.status(HttpStatus.OK).json(fetchedMetrics)
 
     }catch(err){
         console.error("error in payment getmetrics",err)
-        return res.status(500).json({
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             message: "error in fetching data",
             error: err instanceof Error?err.message:err
         })
@@ -24,11 +24,11 @@ export const getDetails = async(req:Request, res:Response)=>{
         await detailSchema.validate(req.query);
         const {search,sort,filter,page,pageSize} = req.query;
         const fetchedDetails = await getAllDetails(search,sort,filter,Number(page),Number(pageSize));
-        return res.status(200).json(fetchedDetails)
+        return res.status(HttpStatus.OK).json(fetchedDetails)
 
     }catch(err){
         console.error("error in payment getdetails",err)
-        return res.status(500).json({
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             message: "error in fetching data",
             error: err instanceof Error?err.message:err
         })
@@ -40,10 +40,10 @@ export const getSubdetails = async(req:Request, res:Response)=>{
         await subdetailSchema.validate(req.params)
         const {paymentId} = req.params; 
         const fetchedSubdetails = await getAllSubdetails(Number(paymentId)) 
-        return res.status(200).json(fetchedSubdetails) 
+        return res.status(HttpStatus.OK).json(fetchedSubdetails) 
     }catch(err){ 
         console.error("error in payment getSubdetails", err); 
-        return res.status(500).json({ 
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
             message: "error in fetching each user payment sub-details", 
             error: err instanceof Error ? err.message : err 
         }) 
@@ -56,10 +56,10 @@ export const getOnetimepayments = async(req:Request, res:Response)=>{
         await otpDetailSchema.validate(req.query);
         const {search,sort,filter,page,pageSize } = req.query; 
         const fetchedDetails = await getAllOnetimepayments(search,sort,filter,Number(page),Number(pageSize)) 
-        return res.status(200).json(fetchedDetails) 
+        return res.status(HttpStatus.OK).json(fetchedDetails) 
     }catch(err){ 
         console.error("error in onetimepayments:", err); 
-        return res.status(500).json({ 
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
             message: "error in fetching data", 
             error: err instanceof Error ? err.message : err 
         }); 
@@ -72,10 +72,10 @@ export const getOtpSubdetails = async(req:Request, res:Response)=>{
         await otpSubdetailSchema.validate(req.params);
         const {paymentId} = req.params; 
         const fetchedDetails = await getOnetimepaymentSubdetails(Number(paymentId)) 
-        return res.status(200).json(fetchedDetails) 
+        return res.status(HttpStatus.OK).json(fetchedDetails) 
     }catch(err){ 
         console.error("error in OTP sub-details:", err); 
-        return res.status(500).json({ 
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
             message: "error in fetching data", 
             error: err instanceof Error ? err.message : err 
         }); 
@@ -86,12 +86,12 @@ export const getOtpSubdetails = async(req:Request, res:Response)=>{
 export const sendOtp = async(req:Request, res:Response)=>{ 
     try{
         await sendOtpSchema.validate(req.body); 
-        const {phone_no} = req.body; 
-        const createdOnetimepayment = await sendOnetimepayment(phone_no); 
-        return res.status(200).json(createdOnetimepayment) 
+        const {phoneNo} = req.body; 
+        const createdOnetimepayment = await sendOnetimepayment(phoneNo); 
+        return res.status(HttpStatus.OK).json(createdOnetimepayment) 
     }catch(err){ 
         console.error("error in getotpsubdetails",err); 
-        return res.status(500).json({ message: "error in fetching onetimepayments sub-details data", 
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "error in fetching onetimepayments sub-details data", 
             error: err instanceof Error ? err.message : err 
         }); 
     } 
@@ -100,12 +100,12 @@ export const sendOtp = async(req:Request, res:Response)=>{
 export const createOtp = async(req:Request, res:Response)=>{ 
     try{ 
         await createOtpSchema.validate(req.body);
-        const {phone_no, email, donor_name, amount, payment_mode, transaction_id, district, address, pincode, otp} = req.body; 
-        const createdOnetimepayment = await createOnetimepayment(phone_no, email, donor_name, amount, payment_mode, transaction_id, district, address, pincode, otp); 
-        return res.status(200).json(createdOnetimepayment) 
+        const {phoneNo, email, donorName, amount, paymentMode, transactionId, district, address, pincode, otp} = req.body; 
+        const createdOnetimepayment = await createOnetimepayment(phoneNo, email, donorName, amount, paymentMode, transactionId, district, address, pincode, otp); 
+        return res.status(HttpStatus.OK).json(createdOnetimepayment) 
     }catch(err){ 
         console.error("error in getotpsubdetails",err); 
-        return res.status(500).json({ 
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
             message: "error in fetching onetimepayments sub-details data", 
             error: err instanceof Error ? err.message : err 
         }); 
@@ -115,13 +115,13 @@ export const createOtp = async(req:Request, res:Response)=>{
 export const getDonorByPhone = async(req:Request, res:Response)=>{
   try{
     await checkPhoneSchema.validate(req.params);
-    const {phone_no} = req.params;
+    const {phoneNo} = req.params;
 
-    const fetchedDonor = await fetchDonorByPhone(phone_no)
-    return res.status(200).json(fetchedDonor);
+    const fetchedDonor = await fetchDonorByPhone(phoneNo)
+    return res.status(HttpStatus.OK).json(fetchedDonor);
 
   }catch(err){
     console.error(err);
-    return res.status(500).json({message: "Server error"});
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({message: "Server error"});
   }
 };

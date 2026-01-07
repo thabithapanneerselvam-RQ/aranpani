@@ -8,12 +8,12 @@ router.get("/metrics", getMetrics)
 router.get("/details", getDetails)
 router.get("/:paymentId/sub-details", getSubdetails)
 
-router.get("/onetimepayment", getOnetimepayments)
-router.get("/oneTimePayment/:paymentId/sub-details", getOtpSubdetails)
+router.get("/one-time-payment", getOnetimepayments)
+router.get("/one-time-payment/:paymentId/sub-details", getOtpSubdetails)
 
 router.post("/send-otp", sendOtp);
 router.post("/create-otp", createOtp)
 
-router.get("/donors/by-phone/:phone_no", getDonorByPhone);
+router.get("/donors/by-phone/:phoneNo", getDonorByPhone);
 
 export default router;

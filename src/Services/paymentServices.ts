@@ -5,6 +5,8 @@ import { Donor } from "../Models/Donors"
 import { DonorStatus, PaymentMode } from "../Enums/paymentEnum"
 import { Otp } from "../Models/Otp"
 import { io } from "../server"
+import { createDonor, createPayment, fetchAllDetails, fetchAllOnetimepayments, fetchAllSubdetails, fetchDonor, fetchMetrics, fetchOnetimepaymentSubdetails, findDonorByPhone, findOtp, linkOtpToPayment, saveOtp, saveOtpRecord } from "../Repositories/paymentRepository"
+import { create } from "node:domain"
 
 
 const paymentRepo = AppDataSource.getRepository(Payment)
@@ -16,52 +18,26 @@ const {TWILIO_ACCOUNT_SID, TWILIO_SERVICE_SID, TWILIO_AUTH_TOKEN} = process.env;
 
 
 export const getAllMetrics = async(fromDate?: string, toDate?: string)=>{
-    const qb = paymentRepo.createQueryBuilder("p")
-
-    if(fromDate && toDate){
-        qb.where("p.date_of_pay BETWEEN :fromDate AND :toDate",{
-            fromDate,
-            toDate
-        })
-    }
-
-    const result = await qb
-    .select([
-      `SUM(p.amount) AS monthly_amt`,
-      `COUNT(p.donor_id) AS monthly_count`,
-
-      `SUM(CASE WHEN p.mode = 'paid' AND p.role = 'donor' THEN p.amount ELSE 0 END) AS online_amt`,
-      `COUNT(DISTINCT CASE WHEN p.mode = 'paid' AND p.role = 'donor' THEN p.donor_id END) AS online_count`,
-
-      `SUM(CASE WHEN p.mode = 'paid by rep' AND p.role = 'area_rep' THEN p.amount ELSE 0 END) AS offline_amt`,
-      `COUNT(DISTINCT CASE WHEN p.mode = 'paid by rep' AND p.role = 'area_rep' THEN p.donor_id END) AS offline_count`,
-
-      `SUM(CASE WHEN p.mode = 'pending with rep' THEN p.amount ELSE 0 END) AS pending_amt`,
-      `COUNT(DISTINCT CASE WHEN p.mode = 'pending with rep' THEN p.donor_id END) AS pending_count`,
-
-      `SUM(CASE WHEN p.mode = 'not_paid' THEN p.amount ELSE 0 END) AS not_paid_amt`,
-      `COUNT(DISTINCT CASE WHEN p.mode = 'not_paid' THEN p.donor_id END) AS not_paid_count`,
-    ])
-    .getRawOne();
+    const result = await fetchMetrics(fromDate, toDate);
 
     return{
-    monthly_donations:{
+    monthlyDonations:{
       amt: Number(result?.monthly_amt) || 0,
       count: Number(result?.monthly_count) || 0,
     },
-    online_donations:{
+    onlineDonations:{
       amt: Number(result?.online_amt) || 0,
       count: Number(result?.online_count) || 0,
     },
-    offline_donations:{
+    offlineDonations:{
       amt: Number(result?.offline_amt) || 0,
       count: Number(result?.offline_count) || 0,
     },
-    pending_amount_from_rep:{
+    pendingAmountFromRep:{
       amt: Number(result?.pending_amt) || 0,
       count: Number(result?.pending_count) || 0,
     },
-    not_paid_amt:{
+    notPaidAmt:{
       amt: Number(result?.not_paid_amt) || 0,
       count: Number(result?.not_paid_count) || 0,
     },
@@ -70,34 +46,9 @@ export const getAllMetrics = async(fromDate?: string, toDate?: string)=>{
 
 
 export const getAllDetails = async(search: any, sort: any, filter: any, page: number, pageSize: number)=>{
-  const qb = paymentRepo
-    .createQueryBuilder("p")
-    .leftJoinAndSelect("p.donor", "d")
+  const [rows, totalCount] = await fetchAllDetails(search, sort, filter, page, pageSize);
 
-
-  if(filter?.fromDate && filter?.toDate){
-    qb.andWhere("p.date_of_pay BETWEEN :from AND :to", {
-      from: filter.fromDate,
-      to: filter.toDate,
-    });
-  }
-
-  if(search?.donorName){
-    qb.andWhere("LOWER(d.donor_name) LIKE LOWER(:donor_name)", {
-      donor_name: `%${search.donorName}%`,
-    });
-  }
-
-  if(sort?.status){
-    qb.orderBy("p.mode", sort.status.toUpperCase() === "DESC" ? "DESC" : "ASC");
-  } else {
-    qb.orderBy("p.createdAt", "DESC");
-  }
-
-  qb.skip((page - 1) * pageSize).take(pageSize);
-
-  const [rows, totalCount] = await qb.getManyAndCount();
-
+  
   return{
     data: rows.map((row, index)=>({
       s_no: (page - 1) * pageSize + index + 1,
@@ -124,12 +75,7 @@ export const getAllDetails = async(search: any, sort: any, filter: any, page: nu
 
 
 export const getAllSubdetails = async(paymentId: number)=>{
-  const payment = await paymentRepo.findOne({
-    where: {id: paymentId},
-    relations:{
-      donor: {groupMembers: true, areaRep: true},
-    },
-  });
+  const payment = await fetchAllSubdetails(paymentId);
 
   if(!payment){
     throw new Error("Payment not found");
@@ -165,35 +111,7 @@ export const getAllSubdetails = async(paymentId: number)=>{
 
 
 export const getAllOnetimepayments = async(search: any, sort: any, filter: any, page: number, pageSize: number)=>{
-  const qb = oneTimePaymentRepo
-    .createQueryBuilder("p")
-    .leftJoinAndSelect("p.areaRep", "rep")
-    .leftJoinAndSelect("p.project", "proj")
-    .leftJoinAndSelect("p.donor", "donor");
-
-  if(filter?.fromDate && filter?.toDate){
-    qb.andWhere("p.dateOfPay BETWEEN :from AND :to",{
-      from: filter.fromDate,
-      to: filter.toDate,
-    });
-  }
-
-  if(search?.arearepName){
-    qb.andWhere("LOWER(rep.repName) LIKE LOWER(:repName)",{
-      repName: `%${search.arearepName}%`,
-    });
-  }
-
-  if(sort?.status){
-    qb.orderBy("p.mode", sort.status.toLowerCase() === "desc" ? "DESC" : "ASC"
-    );
-  }else{
-    qb.orderBy("p.createdAt", "DESC");
-  }
-
-  qb.skip((page - 1) * pageSize).take(pageSize);
-
-  const [rows, totalCount] = await qb.getManyAndCount();
+  const [rows, totalCount] = await fetchAllOnetimepayments(search, sort, filter, page, pageSize);
 
   return{
     data: rows.map((row, index)=>({
@@ -215,10 +133,7 @@ export const getAllOnetimepayments = async(search: any, sort: any, filter: any, 
 
 
 export const getOnetimepaymentSubdetails = async(paymentId: number)=>{
-  const onetimePayment = await oneTimePaymentRepo.findOne({
-    where: {id: paymentId},
-    relations: {areaRep: true}
-  });
+  const onetimePayment = await fetchOnetimepaymentSubdetails(paymentId);
 
   if(!onetimePayment){
     throw new Error("Onetimepayment is not found");
@@ -238,8 +153,8 @@ export const getOnetimepaymentSubdetails = async(paymentId: number)=>{
 }
 
 
-export const sendOnetimepayment = async(phone_no: string)=>{
-  if(!phone_no){
+export const sendOnetimepayment = async(phoneNo: string)=>{
+  if(!phoneNo){
     throw new Error("Required field phoneno is missing");
   }
 
@@ -250,20 +165,18 @@ export const sendOnetimepayment = async(phone_no: string)=>{
   const otpResponse = await client.verify.v2
     .services(TWILIO_SERVICE_SID)
     .verifications.create({
-      to: phone_no,
+      to: phoneNo,
       channel: "sms"
     });
 
-    await otpRepo.save(
-    otpRepo.create({
-      phoneNo: phone_no,
+    await saveOtp({
+      phoneNo: phoneNo,
       code: otpResponse.sid,
       expiry: new Date(Date.now() + 5 * 60 * 1000),
       verified: false,
     })
-  );
 
-  console.log(io.emit("otp_sent", {phone_no}))
+  console.log(io.emit("otp_sent", {phoneNo}))
   
   return{
     success: true,
@@ -273,10 +186,10 @@ export const sendOnetimepayment = async(phone_no: string)=>{
 };
 
 
-export const createOnetimepayment = async(phone_no: string, email: string, donor_name: string, amount: number, payment_mode: string, transaction_id: string,
+export const createOnetimepayment = async(phoneNo: string, email: string, donorName: string, amount: number, paymentMode: string, transactionId: string,
   district: string, address: string, pincode: string, otp: string)=>{
   
-  if(!phone_no || !otp || !amount || !payment_mode || !email){
+  if(!phoneNo || !otp || !amount || !paymentMode || !email){
     throw new Error("Required fields missing");
   }
 
@@ -287,7 +200,7 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
   const verification = await client.verify.v2
     .services(TWILIO_SERVICE_SID)
     .verificationChecks.create({
-      to: phone_no,
+      to: phoneNo,
       code: otp,
     });
 
@@ -295,10 +208,7 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
     throw new Error("Invalid OTP");
   }
 
-  const otpRecord = await otpRepo.findOne({
-    where: {phoneNo: phone_no, verified: false},
-    order: {createdAt: "DESC"},
-  });
+  const otpRecord = await findOtp(phoneNo);
 
   if (!otpRecord) throw new Error("OTP not found");
 
@@ -307,40 +217,34 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
   }
 
   otpRecord.verified = true;
-  await otpRepo.save(otpRecord);
+  await saveOtpRecord(otpRecord);
 
-  let donor = await donorRepo.findOne({ 
-    where: {phoneNo: phone_no} 
-  });
+  let donor = await findDonorByPhone(phoneNo)
 
   let donorCreated = false;
 
   if (!donor) {
-    donor = donorRepo.create({
-      donorName: donor_name,
+    donor = await createDonor({
+      donorName: donorName,
       email,
       district,
       address,
       pincode,
-      phoneNo: phone_no,
+      phoneNo: phoneNo,
       status: DonorStatus.ACTIVE
     });
-    await donorRepo.save(donor);
     donorCreated = true;
   }
 
-  const payment = oneTimePaymentRepo.create({
+  const payment = await createPayment({
     donor,
     amount,
-    mode: payment_mode as PaymentMode,
-    transactionId: transaction_id,
+    mode: paymentMode as PaymentMode,
+    transactionId: transactionId,
     dateOfPay: new Date(),
   });
 
-  await oneTimePaymentRepo.save(payment);
-
-  otpRecord.oneTimePayment = payment;
-  await otpRepo.save(otpRecord);
+  await linkOtpToPayment(otpRecord, payment.id);
 
   console.log(io.emit("payment_success", {
     paymentId: payment.id,
@@ -350,18 +254,15 @@ export const createOnetimepayment = async(phone_no: string, email: string, donor
 
   return {
     success: true,
-    donor_created: donorCreated,
-    payment_id: payment.id,
+    donorCreated: donorCreated,
+    paymentId: (await payment).id,
     message: "Payment recorded successfully",
   };
 };
 
 
-export const fetchDonorByPhone = async(phone_no: string)=>{
-  const donor = await donorRepo.findOne({
-      where: {phoneNo: phone_no},
-      relations: ["areaRep"],
-    });
+export const fetchDonorByPhone = async(phoneNo: string)=>{
+  const donor = await fetchDonor(phoneNo);
 
     if(!donor){
       return{
@@ -374,7 +275,7 @@ export const fetchDonorByPhone = async(phone_no: string)=>{
       exists: true,
       donor: {
         id: donor.id,
-        donor_name: donor.donorName,
+        donorName: donor.donorName,
         email: donor.email,
         address: donor.address,
         district: donor.district,
