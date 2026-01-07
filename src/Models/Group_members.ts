@@ -9,13 +9,13 @@ export class GroupMember {
   @Column()
   name: string;
 
-  @Column()
-  phone_no: string;
+  @Column({name: "phone_no"})
+  phoneNo: string;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({name: "created_at"})
+  createdAt: Date;
 
-  @ManyToOne(() => Donor, donor => donor.group_members)
+  @ManyToOne(() => Donor, donor => donor.groupMembers)
   @JoinColumn({ name: "donor_id" })
   donor: Donor;
 }

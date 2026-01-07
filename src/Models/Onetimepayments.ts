@@ -1,15 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn, OneToMany } from "typeorm";
 import { AreaRep } from "./Area_reps";
 import { Project } from "./Projects";
 import { PaymentMode } from "../Enums/paymentEnum";
+import { Donor } from "./Donors";
+import { Otp } from "./Otp";
 
 @Entity("one_time_payment")
 export class OneTimePayment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: "date" })
-  date_of_pay: Date;
+  @Column({ type: "date", name: "date_of_pay" })
+  dateOfPay: Date;
 
   @Column({ type: "enum", enum: PaymentMode })
   mode: PaymentMode;
@@ -17,17 +19,25 @@ export class OneTimePayment {
   @Column()
   amount: number;
 
-  @Column()
-  transaction_id: string;
+  @Column({name: "transaction_id"})
+  transactionId: string;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({name: "created_at"})
+  createdAt: Date;
 
-  @ManyToOne(() => AreaRep, ar => ar.one_time_payments)
+  @ManyToOne(() => AreaRep, ar => ar.oneTimePayments)
   @JoinColumn({ name: "area_rep_id" })
-  area_rep: AreaRep;
+  areaRep: AreaRep;
 
-  @ManyToOne(() => Project, p => p.one_time_payments)
+  @ManyToOne(() => Donor, d => d.payments)
+  @JoinColumn({ name: "donor_id" })
+  donor: Donor; 
+
+  @ManyToOne(() => Project, p => p.oneTimePayments)
   @JoinColumn({ name: "project_id" })
   project: Project;
+
+  @OneToMany(() => Otp, (otp) => otp.oneTimePayment)
+  otps: Otp[];
+
 }

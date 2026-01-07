@@ -7,21 +7,21 @@ export class AreaRep {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  rep_name: string;
+  @Column({ name: "rep_name" })
+  repName: string;
 
-  @Column()
-  phone_no: string;
+  @Column({ name: "phone_no" })
+  phoneNo: string;
 
-  @Column()
+  @Column({ name: "address" })
   address: string;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: "created_at" })
+  createdAt: Date;
 
-  @OneToMany(() => Donor, donor => donor.area_rep)
+  @OneToMany(() => Donor, donor => donor.areaRep)
   donors: Donor[];
 
-  @OneToMany(() => OneTimePayment, otp => otp.area_rep)
-  one_time_payments: OneTimePayment[];
+  @OneToMany(() => OneTimePayment, otp => otp.areaRep)
+  oneTimePayments: OneTimePayment[];
 }
